@@ -1,12 +1,15 @@
 """
 Auth routes — register and login. Returns JWT on success.
 """
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
-from app.models.auth_model import UserRegister, UserLogin, DBUser, UserResponse
+import jwt
+from fastapi import APIRouter, HTTPException, Depends
+from app.models.auth_model import UserRegister, UserLogin, DBUser, UserResponse, RefreshTokenRequest
 from app.db.mongo_client import mongo_db
 from app.core.config import settings
-from app.utils.auth_utils import get_hashed_password, verify_password, create_access_token
+from app.api.v1.dependencies import get_current_user
+from app.utils.auth_utils import get_hashed_password, verify_password, create_access_token, create_refresh_token
 from app.core.exceptions import AuthenticationFailed
 from app.core.logging import get_logger
 
@@ -56,12 +59,24 @@ async def login_user(input: UserLogin) -> UserResponse:
         if not verify_password(input.password, user["password"]):
             raise HTTPException(status_code=401, detail="Invalid credentials.")
 
-        token = create_access_token({
+        access_token = create_access_token({
             "user_id": user["id"],
             "email": input.email
         })
+        refresh_token = create_refresh_token(
+            {
+                "user_id": user["id"],
+                "email": input.email
+            }
+        )
         logger.info(f"Login: {input.email}")
-        return UserResponse(token=token)
+
+        await _collection.update_one(
+            {"id": user["id"]},
+            {"$set": {"refresh_token": refresh_token}}
+        )
+
+        return UserResponse(access_token=access_token, refresh_token=refresh_token)
 
     except HTTPException:
         raise
@@ -70,3 +85,70 @@ async def login_user(input: UserLogin) -> UserResponse:
     except Exception as e:
         logger.error(f"Login failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to login.")
+
+@auth_router.post("/refresh", tags=["Auth"])
+async def get_refresh_token(input: RefreshTokenRequest) -> dict:
+    """
+    Issue new access token using valid refresh token.
+    Decodes refresh token, verifies against DB, returns new access token.
+    :param input: RefreshTokenRequest with refresh_token
+    :return: new access_token
+    """
+    try:
+        payload = jwt.decode(
+            input.refresh_token,
+            settings.REFRESH_SECRET_KEY,
+            algorithms=["HS256"]
+        )
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token — user_id missing.")
+
+        stored_data = await _collection.find_one(
+            {"id": user_id},
+            {"_id": 0, "refresh_token": 1, "email": 1}
+        )
+        if not stored_data:
+            raise HTTPException(status_code=401, detail="User not found.")
+
+        if stored_data["refresh_token"] != input.refresh_token:
+            raise HTTPException(status_code=401, detail="Refresh token mismatch.")
+
+        new_access_token = create_access_token({
+            "user_id": user_id,
+            "email": stored_data["email"]
+        })
+
+        logger.info(f"Access token refreshed for user: {user_id}")
+        return {"access_token": new_access_token}
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired. Login again.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token refresh failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to refresh token.")
+
+
+@auth_router.post("/logout", tags=["Auth"])
+async def logout(user_id: str = Annotated[str,Depends(get_current_user)]) -> dict:
+    """
+    Logout user by clearing refresh token from DB.
+    Even if attacker has the token — it's now invalid.
+    :param user_id: extracted from JWT via Depends
+    :return: success message
+    """
+    try:
+        await _collection.update_one(
+            {"id": user_id},
+            {"$set": {"refresh_token": None}}
+        )
+        logger.info(f"User logged out: {user_id}")
+        return {"message": "Logged out successfully."}
+
+    except Exception as e:
+        logger.error(f"Logout failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to logout.")
