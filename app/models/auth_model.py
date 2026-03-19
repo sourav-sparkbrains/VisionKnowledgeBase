@@ -12,12 +12,18 @@ class UserLogin(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
-    token: str
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 class DBUser(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     fullname: str
     email: EmailStr
     password: str
+    refresh_token: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
