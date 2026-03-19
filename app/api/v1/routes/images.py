@@ -2,7 +2,7 @@
 Image routes — list, fetch and delete images from the knowledge base.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 
 from app.core.logging import get_logger
 from app.db.mongo_client import mongo_db
@@ -37,10 +37,10 @@ async def get_images(namespace: str = "default") -> list[ImageResponse]:
             for r in results
         ]
     except DatabaseError as e:
-        raise HTTPException(status_code=503, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=e.user_message)
     except Exception as e:
         logger.error(f"Get images failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch images.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch images.")
 
 
 @images_router.get("/images/{image_id}", tags=["Images"])
@@ -61,12 +61,12 @@ async def get_image(image_id: str) -> ImageResponse:
             image_url=f"{settings.BASE_URL}/static/{r['storage_path']}"
         )
     except ImageNotFound as e:
-        raise HTTPException(status_code=404, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.user_message)
     except DatabaseError as e:
-        raise HTTPException(status_code=503, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=e.user_message)
     except Exception as e:
         logger.error(f"Get image failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch image.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch image.")
 
 
 @images_router.delete("/images/{image_id}", tags=["Images"])
@@ -88,9 +88,9 @@ async def delete_image(image_id: str) -> dict:
         return {"message": f"Image {image_id} deleted successfully"}
 
     except ImageNotFound as e:
-        raise HTTPException(status_code=404, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.user_message)
     except DatabaseError as e:
-        raise HTTPException(status_code=503, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=e.user_message)
     except Exception as e:
         logger.error(f"Delete image failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete image.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete image.")

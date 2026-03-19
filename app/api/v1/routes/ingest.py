@@ -52,11 +52,11 @@ async def ingest(file: UploadFile = File(...),
         )
 
     except DuplicateImage as e:
-        raise HTTPException(status_code=409, detail=e.user_message)
+        raise HTTPException(status_code = status.HTTP_409_CONFLICT, detail=e.user_message)
     except FileTooLarge as e:
-        raise HTTPException(status_code=413, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=e.user_message)
     except InvalidFileType as e:
-        raise HTTPException(status_code=415, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=e.user_message)
     except Exception as e:
         logger.error(f"Ingestion failed: {e}")
         raise HTTPException(

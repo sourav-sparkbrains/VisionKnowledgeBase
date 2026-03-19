@@ -2,7 +2,7 @@
 Query routes — handles semantic search and RAG answer generation.
 """
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 
 from app.api.v1.dependencies import get_current_user
 from app.core.logging import get_logger
@@ -42,6 +42,6 @@ async def query_images(payload: QueryRequest,
     except Exception as e:
         logger.error(f"Query failed: {e}")
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_BAD_REQUEST,
             detail="Failed to generate response. Please try again."
         )

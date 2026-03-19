@@ -1,10 +1,10 @@
 """
 Auth routes — register and login. Returns JWT on success.
 """
-from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Annotated
+from fastapi import APIRouter, HTTPException, Depends, status
 from app.models.auth_model import UserRegister, UserLogin, DBUser, UserResponse, RefreshTokenRequest
 from app.db.mongo_client import mongo_db
 from app.core.config import settings
@@ -25,7 +25,7 @@ async def register_user(input: UserRegister) -> dict:
     try:
         existing = await _collection.find_one({"email": input.email}, {"_id": 0})
         if existing:
-            raise HTTPException(status_code=409, detail="Email already registered.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered.")
 
         user = DBUser(
             fullname=input.fullname,
@@ -39,10 +39,10 @@ async def register_user(input: UserRegister) -> dict:
     except HTTPException:
         raise
     except AuthenticationFailed as e:
-        raise HTTPException(status_code=500, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.user_message)
     except Exception as e:
         logger.error(f"Registration failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to register.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to register.")
 
 
 @auth_router.post("/login", tags=["Auth"])
@@ -54,10 +54,10 @@ async def login_user(input: UserLogin) -> UserResponse:
             {"_id": 0, "password": 1, "id": 1}
         )
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid credentials.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
 
         if not verify_password(input.password, user["password"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
 
         access_token = create_access_token({
             "user_id": user["id"],
@@ -81,10 +81,10 @@ async def login_user(input: UserLogin) -> UserResponse:
     except HTTPException:
         raise
     except AuthenticationFailed as e:
-        raise HTTPException(status_code=500, detail=e.user_message)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.user_message)
     except Exception as e:
         logger.error(f"Login failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to login.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to login.")
 
 @auth_router.post("/refresh", tags=["Auth"])
 async def get_refresh_token(input: RefreshTokenRequest) -> dict:
@@ -102,17 +102,17 @@ async def get_refresh_token(input: RefreshTokenRequest) -> dict:
         )
         user_id = payload.get("user_id")
         if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token — user_id missing.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token — user_id missing.")
 
         stored_data = await _collection.find_one(
             {"id": user_id},
             {"_id": 0, "refresh_token": 1, "email": 1}
         )
         if not stored_data:
-            raise HTTPException(status_code=401, detail="User not found.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")
 
         if stored_data["refresh_token"] != input.refresh_token:
-            raise HTTPException(status_code=401, detail="Refresh token mismatch.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token mismatch.")
 
         new_access_token = create_access_token({
             "user_id": user_id,
@@ -123,14 +123,14 @@ async def get_refresh_token(input: RefreshTokenRequest) -> dict:
         return {"access_token": new_access_token}
 
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Refresh token expired. Login again.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired. Login again.")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token.")
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Token refresh failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to refresh token.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to refresh token.")
 
 
 @auth_router.post("/logout", tags=["Auth"])
@@ -151,4 +151,4 @@ async def logout(user_id: str = Annotated[str,Depends(get_current_user)]) -> dic
 
     except Exception as e:
         logger.error(f"Logout failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to logout.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to logout.")
