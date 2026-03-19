@@ -67,6 +67,32 @@ def create_access_token(data: dict) -> str:
             error_code=500
         )
 
+def create_refresh_token(data: dict) -> str:
+    """
+    Create signed JWT refresh token with 7 day expiry.
+    Uses separate REFRESH_SECRET_KEY for security isolation.
+    :param data: payload dict — must contain user_id
+    :return: signed refresh token string
+    """
+    try:
+        if not data:
+            raise MissingDataError(
+                message="Token data empty",
+                user_message="Token data empty.",
+                error_code=400
+            )
+        data['exp'] = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TIME)
+
+        return jwt.encode(data, settings.REFRESH_KEY, algorithm="HS256")
+    except MissingDataError:
+        raise
+    except Exception as e:
+        logger.error(f"Token creation failed: {e}")
+        raise AuthenticationFailed(
+            message=f"Token creation failed: {e}",
+            user_message="Failed to create token.",
+            error_code=500
+        )
 
 def decode_access_token(token: str) -> dict:
     """Decode and verify JWT. Raises ExpiredSignatureError or InvalidTokenError."""
