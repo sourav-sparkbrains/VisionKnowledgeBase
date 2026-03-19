@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "VisualKnowledgeBase"
     STORAGE_BASE_PATH: str = "storage/images"
     BASE_URL: str = "http://localhost:8000"
-    EXPIRY_TIME: int = 8
+    EXPIRY_TIME: int = 1
+    REFRESH_TIME: int = 7
 
     class Config:
         env_file = ".env"
