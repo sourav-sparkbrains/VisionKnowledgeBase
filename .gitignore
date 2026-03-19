@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+
+# Environment variables
+.env
+
+# Storage
+storage/
+
+# Qdrant local storage
+qdrant_storage/
+
+# Model cache
+*.gguf
+*.bin
+*.safetensors
+
+# HuggingFace cache
+.cache/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
