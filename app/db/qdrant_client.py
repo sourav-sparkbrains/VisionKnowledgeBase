@@ -104,7 +104,7 @@ class QdrantDB:
         try:
             result = await self.client.query_points(
                 collection_name=settings.QDRANT_COLLECTION_NAME,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=limit,
                 query_filter=models.Filter(
                     must=[
@@ -115,7 +115,7 @@ class QdrantDB:
                     ]
                 )
             )
-            logger.info(f"Search vector: {query_vector}")
+            logger.info(f"Results found: {result}")
             return result.points
         except Exception as e:
             logger.error(f"Failed to search vector: {str(e)}")
