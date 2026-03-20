@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     EXPIRY_TIME: int = 1
     REFRESH_TIME: int = 7
 
+    #Secret & Refresh keys
+    SECRET_KEY: str
+    REFRESH_KEY: str
+
     class Config:
         env_file = ".env"
 
