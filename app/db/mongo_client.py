@@ -5,6 +5,7 @@ All methods are async. Raises DatabaseError on failures, ImageNotFound when reco
 Import mongo_db singleton — never instantiate MongoDB directly.
 """
 
+import certifi
 from typing import Self
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.server_api import ServerApi
@@ -30,7 +31,9 @@ class MongoDB:
             cls._instance = super().__new__(cls)
             cls._instance.client = AsyncIOMotorClient(
                 settings.MONGO_URI,
-                server_api=ServerApi('1')
+                server_api=ServerApi('1'),
+                tls=True,
+                tlsCAFile=certifi.where()
             )
             cls._instance.db = cls._instance.client[settings.MONGO_DB_NAME]
         return cls._instance
