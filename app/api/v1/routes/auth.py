@@ -97,7 +97,7 @@ async def get_refresh_token(input: RefreshTokenRequest) -> dict:
     try:
         payload = jwt.decode(
             input.refresh_token,
-            settings.REFRESH_SECRET_KEY,
+            settings.REFRESH_KEY,
             algorithms=["HS256"]
         )
         user_id = payload.get("user_id")
