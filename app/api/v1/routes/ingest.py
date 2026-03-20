@@ -25,8 +25,9 @@ _storage_service = StorageService()
 
 
 @ingestion_router.post("/ingest", tags=["Ingest"])
-async def ingest(file: UploadFile = File(...),
-                 user_id: str = Annotated[str, Depends(get_current_user)]
+async def ingest(
+        user_id:Annotated[str, Depends(get_current_user)],
+        file: UploadFile = File(...)
                  ) -> ImageRecord:
     """
     Upload and process an image through full ingestion pipeline.
@@ -48,7 +49,7 @@ async def ingest(file: UploadFile = File(...),
         return await ingest_service.ingest(
             file_bytes=file_bytes,
             file_name=file.filename,
-            namespace=user_id
+            namespace=user_id.strip().lower()
         )
 
     except DuplicateImage as e:

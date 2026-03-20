@@ -18,7 +18,7 @@ query_router = APIRouter()
 
 @query_router.post("/query", tags=["Query"])
 async def query_images(payload: QueryRequest,
-                       user_id: str = Annotated[str, Depends(get_current_user)]) -> QueryResponse:
+                       user_id: Annotated[str, Depends(get_current_user)]) -> QueryResponse:
     """
     Semantic search over image library with RAG answer generation.
     :param payload: QueryRequest with query text
@@ -26,7 +26,7 @@ async def query_images(payload: QueryRequest,
     :return: QueryResponse with answer and cited source images
     """
     try:
-        namespace = user_id
+        namespace = user_id.strip().lower()
 
         query_service = QueryService(
             embedding_service=embedding_service,
