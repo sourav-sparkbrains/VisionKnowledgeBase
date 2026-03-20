@@ -1,15 +1,14 @@
 """
-Embedding service — generates CLIP vector embeddings from image bytes.
-Uses local Sentence-Transformers for free, offline inference.
+Embedding service — generates sigLIP vector embeddings from image bytes.
 """
 
-import asyncio
 import io
+import asyncio
+import torch
 from PIL import Image
-from sentence_transformers import SentenceTransformer
+from transformers import AutoProcessor, AutoModel
 
 from app.core.logging import get_logger
-from app.core.config import settings
 from app.core.exceptions import EmbeddingFailed
 
 logger = get_logger()
@@ -22,35 +21,51 @@ class EmbeddingService:
 
     def __init__(self):
         """Initialize local CLIP model."""
-        self.model_name = settings.EMBEDDING_MODEL_NAME
-        self.model = SentenceTransformer(self.model_name)
+        self.processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-224")
+        self.model = AutoModel.from_pretrained("google/siglip-base-patch16-224")
 
     async def get_embedding(self, image_bytes: bytes) -> list[float]:
-        """
-        Generate CLIP embedding from raw image bytes locally.
-        :param image_bytes: raw image bytes
-        :return: float vector (usually 512-dim for CLIP)
-        :raises EmbeddingFailed: if processing fails
-        """
         try:
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-            embedding = await asyncio.to_thread(
-                self.model.encode,
-                image,
-                convert_to_numpy=True
-            )
+            def _embed():
+                inputs = self.processor(images=image, return_tensors="pt")
+                with torch.no_grad():
+                    features = self.model.get_image_features(**inputs)
+                return features[0].tolist()
 
-            result = embedding.tolist()
-
-            logger.info(f"Generated local embedding of size: {len(result)}")
+            result = await asyncio.to_thread(_embed)
+            logger.info(f"Generated embedding of size: {len(result)}")
             return result
-
         except Exception as e:
             logger.error(f"Local embedding generation failed: {e}")
             raise EmbeddingFailed(
                 message=f"Local CLIP embedding failed: {str(e)}",
                 user_message="Failed to process image locally.",
+                error_code=500
+            )
+
+    async def get_text_embedding(self, text: str) -> list[float]:
+        """Generate SigLIP embedding from text query."""
+        try:
+            def _embed():
+                inputs = self.processor(
+                    text=[text],
+                    return_tensors="pt",
+                    padding=True
+                )
+                with torch.no_grad():
+                    features = self.model.get_text_features(**inputs)
+                return features[0].tolist()
+
+            result = await asyncio.to_thread(_embed)
+            logger.info(f"Generated text embedding of size: {len(result)}")
+            return result
+        except Exception as e:
+            logger.error(f"Text embedding failed: {e}")
+            raise EmbeddingFailed(
+                message=f"SigLIP text embedding failed: {str(e)}",
+                user_message="Failed to process query.",
                 error_code=500
             )
 

@@ -46,12 +46,9 @@ class QueryService:
         :return: QueryResponse with answer and cited source images
         """
 
-        # step 1 — embed query text using CLIP
-        query_vector = await asyncio.to_thread(
-            self.embedding_service.model.encode,
-            query_text,
-            convert_to_numpy=True
-        )
+        # step 1 — embed query text using sigLIP
+        query_vector = await self.embedding_service.get_text_embedding(query_text)
+
         query_vector = query_vector.tolist()
         logger.info(f"Query embedded: {len(query_vector)} dims")
 
