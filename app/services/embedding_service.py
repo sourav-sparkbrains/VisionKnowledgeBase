@@ -21,8 +21,15 @@ class EmbeddingService:
 
     def __init__(self):
         """Initialize local CLIP model."""
+        # self.processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-224")
+        # self.model = AutoModel.from_pretrained("google/siglip-base-patch16-224")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-224")
-        self.model = AutoModel.from_pretrained("google/siglip-base-patch16-224")
+        self.model = AutoModel.from_pretrained(
+            "google/siglip-base-patch16-224",
+            torch_dtype=torch.float16
+        ).to(self.device)
+        self.model.eval()
 
     async def get_embedding(self, image_bytes: bytes) -> list[float]:
         try:
