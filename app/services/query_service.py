@@ -6,6 +6,7 @@ Embeds text query → searches Qdrant → fetches MongoDB metadata → generates
 import asyncio
 
 from app.providers.local_llm_provider import local_llm
+from app.providers.smollm2_provider import smollm2
 from app.core.logging import get_logger
 from app.core.config import settings
 from app.models.image import ImageResponse
@@ -32,7 +33,7 @@ class QueryService:
         self.embedding_service = embedding_service
         self.mongo_db = mongo_db
         self.qdrant_db = qdrant_db
-        self.llm = local_llm
+        self.llm = smollm2
 
     async def query(
         self,
