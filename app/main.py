@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 
     await qdrant_db.create_collection(
         collection_name=settings.QDRANT_COLLECTION_NAME,
-        vector_size=512
+        vector_size=768
     )
 
     await mongo_db.create_collection(settings.MONGO_COLLECTION)

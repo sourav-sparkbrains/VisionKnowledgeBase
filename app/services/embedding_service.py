@@ -21,15 +21,8 @@ class EmbeddingService:
 
     def __init__(self):
         """Initialize local CLIP model."""
-        # self.processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-224")
-        # self.model = AutoModel.from_pretrained("google/siglip-base-patch16-224")
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-224")
-        self.model = AutoModel.from_pretrained(
-            "google/siglip-base-patch16-224",
-            torch_dtype=torch.float16
-        ).to(self.device)
-        self.model.eval()
+        self.model = AutoModel.from_pretrained("google/siglip-base-patch16-224")
 
     async def get_embedding(self, image_bytes: bytes) -> list[float]:
         try:
@@ -38,8 +31,11 @@ class EmbeddingService:
             def _embed():
                 inputs = self.processor(images=image, return_tensors="pt")
                 with torch.no_grad():
-                    features = self.model.get_image_features(**inputs)
-                return features[0].tolist()
+                    outputs = self.model.get_image_features(**inputs)
+
+                features = outputs.pooler_output if hasattr(outputs, 'pooler_output') else outputs
+                features = features / features.norm(p=2, dim=-1, keepdim=True)
+                return features.squeeze().cpu().numpy().astype(float).tolist()
 
             result = await asyncio.to_thread(_embed)
             logger.info(f"Generated embedding of size: {len(result)}")
@@ -56,14 +52,13 @@ class EmbeddingService:
         """Generate SigLIP embedding from text query."""
         try:
             def _embed():
-                inputs = self.processor(
-                    text=[text],
-                    return_tensors="pt",
-                    padding=True
-                )
+                inputs = self.processor(text=[text], return_tensors="pt", padding=True)
                 with torch.no_grad():
-                    features = self.model.get_text_features(**inputs)
-                return features[0].tolist()
+                    outputs = self.model.get_text_features(**inputs)
+
+                features = outputs.pooler_output if hasattr(outputs, 'pooler_output') else outputs
+                features = features / features.norm(p=2, dim=-1, keepdim=True)
+                return features.squeeze().cpu().numpy().astype(float).tolist()
 
             result = await asyncio.to_thread(_embed)
             logger.info(f"Generated text embedding of size: {len(result)}")

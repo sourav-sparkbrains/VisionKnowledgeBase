@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     #HuggingFace
     HF_API_KEY: str
     EMBEDDING_MODEL_NAME: str ="clip-ViT-B-32"
-    VISION_MODEL: str = "HuggingFaceTB/SmolVLM2-2.2B-Instruct"
-        # "HuggingFaceTB/SmolVLM-500M-Instruct"
+    VISION_MODEL: str = "HuggingFaceTB/SmolVLM-500M-Instruct"
 
     #Transformer
     LOCAL_LLM: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"

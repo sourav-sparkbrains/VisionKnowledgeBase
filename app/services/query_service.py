@@ -6,7 +6,6 @@ Embeds text query → searches Qdrant → fetches MongoDB metadata → generates
 import asyncio
 
 from app.providers.local_llm_provider import local_llm
-from app.providers.smollm2_provider import smollm2
 from app.core.logging import get_logger
 from app.core.config import settings
 from app.models.image import ImageResponse
@@ -33,7 +32,7 @@ class QueryService:
         self.embedding_service = embedding_service
         self.mongo_db = mongo_db
         self.qdrant_db = qdrant_db
-        self.llm = smollm2
+        self.llm = local_llm
 
     async def query(
         self,
@@ -50,7 +49,7 @@ class QueryService:
         # step 1 — embed query text using sigLIP
         query_vector = await self.embedding_service.get_text_embedding(query_text)
 
-        query_vector = query_vector.tolist()
+        # query_vector = query_vector.tolist()
         logger.info(f"Query embedded: {len(query_vector)} dims")
 
         # step 2 — search Qdrant for similar vectors

@@ -6,7 +6,6 @@
 """
 
 from qdrant_client import AsyncQdrantClient, models
-from typing import Self
 
 from app.core.logging import get_logger
 from app.core.config import settings
@@ -20,9 +19,9 @@ class QdrantDB:
         Connection is created once on first instantiation and reused across all requests.
     """
 
-    _instance: Self | None = None
+    _instance: None = None
 
-    def __new__(cls) -> Self:
+    def __new__(cls):
         """Create or return existing singleton instance."""
         if cls._instance is None:
             logger.info("Connecting to Qdrant for the first time...")
@@ -32,7 +31,7 @@ class QdrantDB:
             port = settings.QDRANT_PORT
             api_key = settings.QDRANT_API_KEY or None
 
-            cls._instance.client= AsyncQdrantClient(host=host, port=port,api_key=api_key)
+            cls._instance.client= AsyncQdrantClient(host=host, port=port,api_key=api_key,check_compatibility=False)
 
         return cls._instance
 

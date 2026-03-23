@@ -6,7 +6,7 @@ Runs fully offline on CPU, lightweight (500MB), no API key needed.
 import io
 import asyncio
 import torch
-from transformers import AutoProcessor, AutoModelForVision2Seq, BitsAndBytesConfig
+from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
 from PIL import Image
 
 from app.core.logging import get_logger
@@ -37,27 +37,15 @@ class SmolVLMProvider:
 
     def __init__(self):
         """Load SmolVLM processor and model once at startup."""
-        # logger.info("Loading SmolVLM-500M model locally...")
-        # self.processor = AutoProcessor.from_pretrained(MODEL_ID)
-        # self.model = AutoModelForVision2Seq.from_pretrained(
-        #     MODEL_ID,
-        #     torch_dtype=torch.float32,
-        # )
-        # self.model.eval()
-        logger.info(f"Loading {MODEL_ID} on GPU with quantization...")
-
-        # Configure 4-bit loading
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16
-        )
-
+        logger.info("Loading SmolVLM-500M model locally...")
         self.processor = AutoProcessor.from_pretrained(MODEL_ID)
-        self.model = AutoModelForVision2Seq.from_pretrained(
+        self.model = AutoModelForImageTextToText.from_pretrained(
             MODEL_ID,
-            quantization_config=quant_config,
-            device_map="auto"  # Automatically handles the GPU placement
+            torch_dtype=torch.float32,
+            trust_remote_code=True,
+            device_map="cpu"
         )
+        self.model.eval()
         logger.info("SmolVLM-500M loaded successfully")
 
     def _generate(self, image: Image.Image, prompt_text: str, max_tokens: int = 128) -> str:

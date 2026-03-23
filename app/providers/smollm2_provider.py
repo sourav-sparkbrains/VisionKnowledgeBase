@@ -20,35 +20,16 @@ class SmolLM2Provider:
     def __init__(self):
         """
         """
-        # logger.info("Loading smollm2...")
-        #
-        # self.pipe = pipeline(
-        #     "text-generation",
-        #     model= "HuggingFaceTB/SmolLM2-1.7B-Instruct",
-        #     torch_dtype=torch.float32,
-        #     device="cpu"
-        # )
-        #
-        # logger.info("Local smollm2 loaded successfully")
-        logger.info("Loading SmolLM2 on GPU...")
+        logger.info("Loading smollm2...")
 
-        # 1. Configure 4-bit quantization to save VRAM
-        quant_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True
-        )
-
-        # 2. Update pipeline to use the GPU and quantization
         self.pipe = pipeline(
             "text-generation",
-            model="HuggingFaceTB/SmolLM2-1.7B-Instruct",
-            device_map="auto",  # Automatically handles GPU placement
-            model_kwargs={"quantization_config": quant_config}
+            model= "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+            torch_dtype=torch.float32,
+            device="cpu"
         )
 
-        logger.info("Local SmolLM2 loaded on GPU successfully")
+        logger.info("Local smollm2 loaded successfully")
 
 
     def _generate(self, prompt: str, max_tokens: int = 256) -> str:
