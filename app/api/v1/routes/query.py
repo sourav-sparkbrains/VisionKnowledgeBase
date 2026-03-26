@@ -27,6 +27,7 @@ async def query_images(payload: QueryRequest,
     """
     try:
         namespace = user_id.strip().lower()
+        thread_id = payload.thread_id
 
         query_service = QueryService(
             embedding_service=embedding_service,
@@ -36,7 +37,8 @@ async def query_images(payload: QueryRequest,
 
         return await query_service.query(
             query_text=payload.query,
-            namespace=namespace
+            namespace=namespace,
+            thread_id=thread_id
         )
 
     except Exception as e:

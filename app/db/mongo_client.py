@@ -6,7 +6,6 @@ Import mongo_db singleton — never instantiate MongoDB directly.
 """
 
 import certifi
-from typing import Self
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.server_api import ServerApi
 
@@ -22,9 +21,9 @@ class MongoDB:
     Singleton MongoDB client using Motor for async operations.
     Connection is created once on first instantiation and reused across all requests.
     """
-    _instance: Self | None = None
+    _instance: None = None
 
-    def __new__(cls) -> Self:
+    def __new__(cls):
         """Create or return existing singleton instance."""
         if cls._instance is None:
             logger.info("Connecting to MongoDB...")

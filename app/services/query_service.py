@@ -38,6 +38,7 @@ class QueryService:
         self,
         query_text: str,
         namespace: str,
+        thread_id: str,
     ) -> QueryResponse:
         """
         Full RAG pipeline — embed query, search, fetch, generate answer.
@@ -46,13 +47,12 @@ class QueryService:
         :return: QueryResponse with answer and cited source images
         """
 
-        # step 1 — embed query text using CLIP
-        query_vector = await asyncio.to_thread(
-            self.embedding_service.model.encode,
-            query_text,
-            convert_to_numpy=True
-        )
-        query_vector = query_vector.tolist()
+        logger.info(f"Using thread id {thread_id}")
+
+        # step 1 — embed query text using sigLIP
+        query_vector = await self.embedding_service.get_text_embedding(query_text)
+
+        # query_vector = query_vector.tolist()
         logger.info(f"Query embedded: {len(query_vector)} dims")
 
         # step 2 — search Qdrant for similar vectors
