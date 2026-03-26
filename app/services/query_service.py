@@ -38,6 +38,7 @@ class QueryService:
         self,
         query_text: str,
         namespace: str,
+        thread_id: str,
     ) -> QueryResponse:
         """
         Full RAG pipeline — embed query, search, fetch, generate answer.
@@ -45,6 +46,8 @@ class QueryService:
         :param namespace: user/team scope to search within
         :return: QueryResponse with answer and cited source images
         """
+
+        logger.info(f"Using thread id {thread_id}")
 
         # step 1 — embed query text using sigLIP
         query_vector = await self.embedding_service.get_text_embedding(query_text)
